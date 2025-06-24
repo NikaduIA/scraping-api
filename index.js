@@ -1,39 +1,37 @@
 const express = require('express');
-const chromium = require('chrome-aws-lambda');
 const puppeteer = require('puppeteer-core');
+const chromium = require('chrome-aws-lambda');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/consulta', async (req, res) => {
-    const { nombre } = req.query;
-
-    if (!nombre) {
-        return res.status(400).json({ error: 'El parámetro "nombre" es obligatorio' });
-    }
+    const nombre = req.query.nombre;
+    if (!nombre) return res.status(400).send('Falta el parámetro ?nombre=');
 
     try {
         const browser = await puppeteer.launch({
             args: chromium.args,
             defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath,
+            executablePath: await chromium.executablePath || '/usr/bin/chromium-browser',
             headless: chromium.headless,
         });
 
         const page = await browser.newPage();
-        await page.goto('https://consultaprocesos.ramajudicial.gov.co/Procesos/NombreRazonSocial');
+        await page.goto('https://consultaprocesos.ramajudicial.gov.co/Procesos/NombreRazonSocial', { waitUntil: 'networkidle2' });
+        await page.waitForSelector('input#input-78');
+        await page.type('input#input-78', nombre);
+        await page.click('button[aria-label="Consultar por nombre o razón social"]');
+        await page.waitForTimeout(5000);
 
-        console.log(`Buscando procesos para: ${nombre}`);
-
-        // Aquí agregarías la interacción real y el scraping
-        // Por ahora, solo cierra el navegador
-
+        const content = await page.content();
         await browser.close();
 
-        res.json({ mensaje: `Consulta realizada para: ${nombre}` });
+        res.send(content);
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Ocurrió un error al consultar los procesos' });
+        res.status(500).send({ error: 'Ocurrió un error al consultar los procesos' });
     }
 });
 
