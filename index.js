@@ -6,12 +6,17 @@ let puppeteer;
 let chromium;
 
 if (process.env.AWS_EXECUTION_ENV || process.env.IS_RENDER) {
-    // Entorno de Render o AWS
+    // Estamos en Render o AWS
     puppeteer = require('puppeteer-core');
     chromium = require('chrome-aws-lambda');
 } else {
-    // Entorno local
-    puppeteer = require('puppeteer');
+    // Estamos en local
+    try {
+        puppeteer = require('puppeteer');
+    } catch (err) {
+        console.error('Falta puppeteer en local, ejecuta: npm install puppeteer');
+        process.exit(1);
+    }
 }
 
 app.get('/consulta', async (req, res) => {
