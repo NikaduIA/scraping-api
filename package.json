@@ -1,7 +1,7 @@
 {
   "name": "scraping-api",
   "version": "1.0.0",
-  "description": "API para scraping con Puppeteer en Render",
+  "description": "API de scraping para Rama Judicial con Render",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -9,6 +9,6 @@
   "dependencies": {
     "chrome-aws-lambda": "^10.1.0",
     "express": "^4.18.2",
-    "puppeteer-core": "10.2.0"
+    "puppeteer-core": "^19.11.1"
   }
 }
