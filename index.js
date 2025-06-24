@@ -12,10 +12,16 @@ app.get('/consulta', async (req, res) => {
     }
 
     try {
+        const executablePath = await chromium.executablePath;
+
+        if (!executablePath) {
+            throw new Error('No se encontró el path del navegador Chromium en Render.');
+        }
+
         const browser = await puppeteer.launch({
             args: chromium.args,
             defaultViewport: chromium.defaultViewport,
-            executablePath: '/usr/bin/chromium-browser',
+            executablePath: executablePath,
             headless: chromium.headless,
         });
 
@@ -46,3 +52,4 @@ app.get('/consulta', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
 });
+
