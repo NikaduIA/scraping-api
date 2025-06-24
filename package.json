@@ -3,14 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-  "start": "node index.js"
-},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+    "start": "node index.js"
+  },
   "dependencies": {
-    "express": "^5.1.0",
-    "puppeteer": "^24.10.2"
+    "chrome-aws-lambda": "^10.1.0",
+    "express": "^4.21.2",
+    "puppeteer": "^24.10.2",
+    "puppeteer-core": "10.2.0"
   }
 }

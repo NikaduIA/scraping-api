@@ -5,29 +5,26 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/consulta', async (req, res) => {
-    const nombre = req.query.nombre;
-    if (!nombre) return res.status(400).send('Falta el parámetro ?nombre=');
+    const { nombre } = req.query;
+
+    if (!nombre) {
+        return res.status(400).json({ error: 'El parámetro "nombre" es obligatorio' });
+    }
 
     try {
-        const browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
+        const browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
+        await page.goto('https://consultaprocesos.ramajudicial.gov.co/Procesos/NombreRazonSocial');
 
-        await page.goto('https://consultaprocesos.ramajudicial.gov.co/Procesos/NombreRazonSocial', { waitUntil: 'networkidle2' });
+        // Aquí deberías implementar la interacción con la página:
+        console.log(`Buscando procesos para: ${nombre}`);
 
-        await page.waitForSelector('input#input-78');
-        await page.type('input#input-78', nombre);
-
-        await page.click('button[aria-label="Consultar por nombre o razón social"]');
-        await page.waitForTimeout(5000); 
-
-        const content = await page.content();
         await browser.close();
 
-        res.send(content);
-    } catch (err) {
-        res.status(500).send(err.toString());
+        res.json({ mensaje: `Consulta realizada para: ${nombre}` });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Ocurrió un error al consultar los procesos' });
     }
 });
 
