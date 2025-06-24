@@ -38,3 +38,6 @@ app.get('/consulta', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
 });
+
+// Cambio forzado para deploy en Render
+
