@@ -1,6 +1,7 @@
 const express = require('express');
 const puppeteer = require('puppeteer-core');
 const chromium = require('chrome-aws-lambda');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,16 +13,13 @@ app.get('/consulta', async (req, res) => {
     }
 
     try {
-        const executablePath = await chromium.executablePath;
-
-        if (!executablePath) {
-            throw new Error('No se encontró el path del navegador Chromium en Render.');
-        }
+        // Detecta si estamos en Render o en Local
+        const isRender = process.env.AWS_LAMBDA_FUNCTION_VERSION || process.env.RENDER;
 
         const browser = await puppeteer.launch({
             args: chromium.args,
             defaultViewport: chromium.defaultViewport,
-            executablePath: executablePath,
+            executablePath: isRender ? await chromium.executablePath : path.resolve('C:/Program Files/Google/Chrome/Application/chrome.exe'),
             headless: chromium.headless,
         });
 
@@ -52,4 +50,3 @@ app.get('/consulta', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
 });
-
