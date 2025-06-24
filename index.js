@@ -12,16 +12,10 @@ app.get('/consulta', async (req, res) => {
     }
 
     try {
-        const executablePath = await chromium.executablePath;
-
-        if (!executablePath) {
-            throw new Error('No se encontró el path del navegador Chromium en Render.');
-        }
-
         const browser = await puppeteer.launch({
             args: chromium.args,
             defaultViewport: chromium.defaultViewport,
-            executablePath,
+            executablePath: '/usr/bin/chromium-browser',
             headless: chromium.headless,
         });
 
@@ -42,7 +36,10 @@ app.get('/consulta', async (req, res) => {
 
     } catch (error) {
         console.error('Error al consultar:', error);
-        res.status(500).send({ error: 'Ocurrió un error al consultar los procesos', detalle: error.message });
+        res.status(500).send({
+            error: 'Ocurrió un error al consultar los procesos',
+            detalle: error.message
+        });
     }
 });
 
