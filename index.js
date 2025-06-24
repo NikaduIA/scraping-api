@@ -1,52 +1,49 @@
 const express = require('express');
+const puppeteer = require('puppeteer');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-let puppeteer;
-let chromium;
-
-if (process.env.AWS_EXECUTION_ENV || process.env.IS_RENDER) {
-    // Estamos en Render o AWS
-    puppeteer = require('puppeteer-core');
-    chromium = require('chrome-aws-lambda');
-} else {
-    // Estamos en local
-    try {
-        puppeteer = require('puppeteer');
-    } catch (err) {
-        console.error('Falta puppeteer en local, ejecuta: npm install puppeteer');
-        process.exit(1);
-    }
-}
-
 app.get('/consulta', async (req, res) => {
     const nombre = req.query.nombre;
-    if (!nombre) {
-        return res.status(400).send('Falta el parámetro ?nombre=');
+    const tipo = req.query.tipo;
+    const vigente = req.query.vigente;
+
+    if (!nombre || !tipo || !vigente) {
+        return res.status(400).send('Faltan parámetros requeridos: nombre, tipo o vigente');
     }
 
     try {
-        const launchOptions = {
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
-            headless: true
-        };
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
 
-        if (chromium) {
-            launchOptions.args = chromium.args;
-            launchOptions.defaultViewport = chromium.defaultViewport;
-            launchOptions.executablePath = await chromium.executablePath;
-            launchOptions.headless = chromium.headless;
-        }
-
-        const browser = await puppeteer.launch(launchOptions);
         const page = await browser.newPage();
-
         await page.goto('https://consultaprocesos.ramajudicial.gov.co/Procesos/NombreRazonSocial', {
             waitUntil: 'networkidle2'
         });
 
+        // Seleccionar tipo de persona
+        await page.waitForSelector('input#input-65');
+        if (tipo === 'nat') {
+            await page.click('input#input-65'); // Natural
+        } else if (tipo === 'jur') {
+            await page.click('input#input-66'); // Jurídica
+        }
+
+        // Escribir nombre
         await page.waitForSelector('input#input-78');
         await page.type('input#input-78', nombre);
+
+        // Seleccionar vigente o todos
+        if (vigente === 'true') {
+            await page.click('input#input-88'); // Solo vigentes
+        } else {
+            await page.click('input#input-89'); // Todos los procesos
+        }
+
+        // Consultar
         await page.click('button[aria-label="Consultar por nombre o razón social"]');
         await page.waitForTimeout(5000);
 
@@ -57,8 +54,13 @@ app.get('/consulta', async (req, res) => {
 
     } catch (error) {
         console.error('Error al consultar:', error);
-        res.status(500).send({ error: 'Ocurrió un error al consultar los procesos' });
+        res.status(500).send({ error: 'Ocurrió un error al consultar los procesos', detalle: error.message });
     }
+});
+
+// Ruta básica para verificar si el servidor está corriendo
+app.get('/', (req, res) => {
+    res.send('Servidor funcionando correctamente');
 });
 
 app.listen(PORT, () => {
