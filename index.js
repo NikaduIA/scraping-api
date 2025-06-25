@@ -1,66 +1,27 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/consulta', async (req, res) => {
     const nombre = req.query.nombre;
-    const tipo = req.query.tipo;
-    const vigente = req.query.vigente;
+    const tipo = req.query.tipo || 'nat'; // 'nat' por defecto si no lo envían
+    const vigente = req.query.vigente === 'true' ? 'true' : 'false';
 
-    if (!nombre || !tipo || !vigente) {
-        return res.status(400).send('Faltan parámetros requeridos: nombre, tipo o vigente');
+    if (!nombre) {
+        return res.status(400).send({ error: 'Falta el parámetro ?nombre=' });
     }
+
+    const apiUrl = `https://consultaprocesos.ramajudicial.gov.co:448/api/v2/Procesos/Consulta/NombreRazonSocial?nombre=${encodeURIComponent(nombre)}&tipoPersona=${tipo}&SoloActivos=${vigente}&codificacionDespacho=&pagina=1`;
 
     try {
-        const browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
-
-        const page = await browser.newPage();
-        await page.goto('https://consultaprocesos.ramajudicial.gov.co/Procesos/NombreRazonSocial', {
-            waitUntil: 'networkidle2'
-        });
-
-        // Seleccionar tipo de persona
-        await page.waitForSelector('input#input-65');
-        if (tipo === 'nat') {
-            await page.click('input#input-65'); // Natural
-        } else if (tipo === 'jur') {
-            await page.click('input#input-66'); // Jurídica
-        }
-
-        // Escribir nombre
-        await page.waitForSelector('input#input-78');
-        await page.type('input#input-78', nombre);
-
-        // Seleccionar vigente o todos
-        if (vigente === 'true') {
-            await page.click('input#input-88'); // Solo vigentes
-        } else {
-            await page.click('input#input-89'); // Todos los procesos
-        }
-
-        // Consultar
-        await page.click('button[aria-label="Consultar por nombre o razón social"]');
-        await page.waitForTimeout(5000);
-
-        const content = await page.content();
-        await browser.close();
-
-        res.send(content);
-
+        const response = await axios.get(apiUrl);
+        res.send(response.data);
     } catch (error) {
-        console.error('Error al consultar:', error);
+        console.error('Error al consultar la API:', error.message);
         res.status(500).send({ error: 'Ocurrió un error al consultar los procesos', detalle: error.message });
     }
-});
-
-// Ruta básica para verificar si el servidor está corriendo
-app.get('/', (req, res) => {
-    res.send('Servidor funcionando correctamente');
 });
 
 app.listen(PORT, () => {
